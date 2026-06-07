@@ -1,8 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
-console.log('MAIN DATABASE_URL=', process.env.DATABASE_URL);
-console.log('ALL ENV KEYS=', Object.keys(process.env).filter(k => k.includes('DATABASE')));
+console.log('TEST_VAR=', process.env.TEST_VAR);
+console.log('DATABASE_URL=', process.env.DATABASE_URL);
+console.log(
+  'ENV_KEYS=',
+  Object.keys(process.env).filter(
+    (k) => k.includes('DATABASE') || k.includes('TEST'),
+  ),
+);
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
