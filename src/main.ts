@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+console.log('MAIN DATABASE_URL=', process.env.DATABASE_URL);
+console.log('ALL ENV KEYS=', Object.keys(process.env).filter(k => k.includes('DATABASE')));
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
