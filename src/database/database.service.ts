@@ -6,6 +6,7 @@ export class DatabaseService {
   private pool: Pool;
 
   constructor() {
+   console.log('DATABASE_URL=', process.env.DATABASE_URL);
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: {
