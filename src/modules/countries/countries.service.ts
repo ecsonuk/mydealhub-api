@@ -25,6 +25,14 @@ export class CountriesService {
       UK: 'United Kingdom',
       DE: 'Germany',
       FR: 'France',
+      AU: 'Australia',
+      CA: 'Canada',
+      DK: 'Denmark',
+      ES: 'Spain',
+      FI: 'Finland',
+      IT: 'Italy',
+      NL: 'Netherlands',
+      US: 'United States',
     };
 
     return result.rows.map((row) => ({

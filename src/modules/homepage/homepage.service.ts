@@ -126,6 +126,14 @@ export class HomepageService {
       LIMIT 20
     `, [country]);
 
+	const statsPromise = this.db.query(`
+	  SELECT
+	    (SELECT COUNT(*) FROM offers WHERE is_active = true) AS offers,
+	    (SELECT COUNT(DISTINCT m.merchant_id)  FROM merchants m  JOIN offers o ON m.merchant_id = o.merchant_id  WHERE m.visible = true AND o.is_active = true) AS merchants,
+	    (SELECT COUNT(*) FROM categories) AS categories,
+	    (SELECT COUNT(DISTINCT country_code) FROM offers WHERE is_active = true) AS countries
+	`);
+
     const [
       featuredOffers,
       topDiscounts,
@@ -133,6 +141,7 @@ export class HomepageService {
       featuredMerchants,
       popularCategories,
       latestOffers,
+      stats,
     ] = await Promise.all([
       featuredOffersPromise,
       topDiscountsPromise,
@@ -140,10 +149,12 @@ export class HomepageService {
       featuredMerchantsPromise,
       popularCategoriesPromise,
       latestOffersPromise,
+      statsPromise,
     ]);
 
     return {
       success: true,
+      stats: stats.rows[0],
       featuredOffers: featuredOffers.rows,
       topDiscounts: topDiscounts.rows,
       topSavings: topSavings.rows,
