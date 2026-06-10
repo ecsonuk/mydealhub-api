@@ -44,10 +44,13 @@ export class HomepageService {
         o.currency,
         o.image_url,
 	o.tracking_url,
-        m.merchant_name
+        m.merchant_name,
+	c.category_name
       FROM offers o
       LEFT JOIN merchants m
         ON o.merchant_id = m.merchant_id
+      LEFT JOIN categories c
+        ON o.category_id = c.category_id
       WHERE o.is_active = true AND ($1 = '' OR o.country_code = $1) AND o.rebate_percentage IS NOT NULL
         AND o.rebate_percentage IS NOT NULL
       ORDER BY o.rebate_percentage DESC
@@ -79,6 +82,32 @@ export class HomepageService {
      LIMIT 20
    `, [country]);
 
+	const exclusiveOffersPromise = this.db.query(`
+	  SELECT
+	    o.offer_id,
+	    o.merchant_id,
+	    o.category_id,
+	    o.title,
+	    o.country_code,
+	    o.price,
+	    o.currency,
+	    o.image_url,
+	    o.tracking_url,
+	    m.merchant_name,
+	    c.category_name
+	  FROM offers o
+	  LEFT JOIN merchants m
+	    ON o.merchant_id = m.merchant_id
+	  LEFT JOIN categories c
+	    ON o.category_id = c.category_id
+	  WHERE
+	    o.is_active = true
+	    AND ($1 = '' OR o.country_code = $1)
+	  ORDER BY
+	    o.estimated_cpc DESC NULLS LAST
+	  LIMIT 20
+	`, [country]);
+
     const featuredMerchantsPromise = this.db.query(`
       SELECT
         merchant_id,
@@ -91,6 +120,28 @@ export class HomepageService {
       ORDER BY merchant_estimated_cpc DESC NULLS LAST
       LIMIT 20
     `);
+
+	const topBrandsPromise = this.db.query(`
+	  SELECT
+	    m.merchant_id,
+	    m.merchant_name,
+	    m.logo_url,
+	    COUNT(o.offer_id) AS offer_count
+	  FROM merchants m
+	  JOIN offers o
+	    ON m.merchant_id = o.merchant_id
+	  WHERE
+	    m.visible = true
+	    AND o.is_active = true
+	    AND ($1 = '' OR o.country_code = $1)
+	  GROUP BY
+	    m.merchant_id,
+	    m.merchant_name,
+	    m.logo_url
+	  ORDER BY
+	    offer_count DESC
+	  LIMIT 20
+	`, [country]);
 
     const popularCategoriesPromise = this.db.query(`
       SELECT
@@ -117,10 +168,13 @@ export class HomepageService {
         o.currency,
         o.image_url,
 	o.tracking_url,
-        m.merchant_name
+        m.merchant_name,
+	c.category_name
       FROM offers o
       LEFT JOIN merchants m
         ON o.merchant_id = m.merchant_id
+      LEFT JOIN categories c
+        ON o.category_id = c.category_id
       WHERE o.is_active = true AND ($1 = '' OR o.country_code = $1)
       ORDER BY o.created_at DESC
       LIMIT 20
@@ -134,22 +188,26 @@ export class HomepageService {
 	    (SELECT COUNT(DISTINCT country_code) FROM offers WHERE is_active = true) AS countries
 	`);
 
-    const [
-      featuredOffers,
-      topDiscounts,
-      topSavings,
-      featuredMerchants,
-      popularCategories,
-      latestOffers,
-      stats,
+     const [
+	featuredOffers,
+	topDiscounts,
+	topSavings,
+	exclusiveOffers,
+	featuredMerchants,
+	topBrands,
+	popularCategories,
+	latestOffers,
+	stats,
     ] = await Promise.all([
-      featuredOffersPromise,
-      topDiscountsPromise,
-      topSavingsPromise,
-      featuredMerchantsPromise,
-      popularCategoriesPromise,
-      latestOffersPromise,
-      statsPromise,
+	featuredOffersPromise,
+ 	topDiscountsPromise,
+	topSavingsPromise,
+	exclusiveOffersPromise,
+	featuredMerchantsPromise,
+	topBrandsPromise,
+	popularCategoriesPromise,
+	latestOffersPromise,
+	statsPromise,
     ]);
 
     return {
@@ -158,7 +216,9 @@ export class HomepageService {
       featuredOffers: featuredOffers.rows,
       topDiscounts: topDiscounts.rows,
       topSavings: topSavings.rows,
+      exclusiveOffers: exclusiveOffers.rows,
       featuredMerchants: featuredMerchants.rows,
+      topBrands: topBrands.rows,
       popularCategories: popularCategories.rows,
       latestOffers: latestOffers.rows,
     };
