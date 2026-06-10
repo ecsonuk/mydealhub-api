@@ -122,25 +122,28 @@ export class HomepageService {
     `);
 
 	const topBrandsPromise = this.db.query(`
-	  SELECT
-	    m.merchant_id,
-	    m.merchant_name,
-	    m.logo_url,
-	    COUNT(o.offer_id) AS offer_count
-	  FROM merchants m
-	  JOIN offers o
-	    ON m.merchant_id = o.merchant_id
-	  WHERE
-	    m.visible = true
-	    AND o.is_active = true
-	    AND ($1 = '' OR o.country_code = $1)
-	  GROUP BY
-	    m.merchant_id,
-	    m.merchant_name,
-	    m.logo_url
-	  ORDER BY
-	    offer_count DESC
-	  LIMIT 20
+	SELECT DISTINCT ON (m.logo_url)
+	  m.merchant_id,
+	  m.merchant_name,
+	  m.logo_url,
+	  COUNT(o.offer_id) AS offer_count
+	FROM merchants m
+	JOIN offers o
+	  ON m.merchant_id = o.merchant_id
+	WHERE
+	  m.visible = true
+	  AND o.is_active = true
+	  AND ($1 = '' OR o.country_code = $1)
+	  AND m.logo_url IS NOT NULL
+	  AND m.logo_url <> ''
+	GROUP BY
+	  m.merchant_id,
+	  m.merchant_name,
+	  m.logo_url
+	ORDER BY
+	  m.logo_url,
+	  COUNT(o.offer_id) DESC
+	LIMIT 50
 	`, [country]);
 
     const popularCategoriesPromise = this.db.query(`
