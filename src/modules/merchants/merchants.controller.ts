@@ -28,12 +28,17 @@ async findAll(
   );
 }
 
-  @Get(':merchantId')
-  async findOne(
-    @Param('merchantId') merchantId: string,
-  ) {
-    return this.merchantsService.findOne(
-      merchantId,
-    );
-  }
+@Get(':merchantId')
+async findOne(
+  @Param('merchantId') merchantId: string,
+  @Query('page') page = '1',
+  @Query('limit') limit = '20',
+) {
+  return this.merchantsService.findOne(
+    merchantId,
+    Number(page),
+    Number(limit),
+  );
+}
+
 }

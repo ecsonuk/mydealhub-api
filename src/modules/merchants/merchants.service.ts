@@ -31,14 +31,15 @@ export class MerchantsService {
 
     const result = await this.db.query(
       `
-	SELECT DISTINCT
+	SELECT
 	  m.merchant_id,
 	  m.merchant_name,
 	  m.merchant_url,
 	  m.logo_url,
 	  m.summary,
 	  m.currency,
-	  m.merchant_estimated_cpc
+	  m.merchant_estimated_cpc,
+	COUNT(o.offer_id)::int AS offer_count
 	FROM merchants m
 	JOIN offers o
 	  ON m.merchant_id = o.merchant_id
@@ -46,6 +47,14 @@ export class MerchantsService {
 	  AND m.merchant_name ILIKE $1
 	  AND o.is_active = true
 	  AND ($2 = '' OR o.country_code = $2)
+	GROUP BY
+	  m.merchant_id,
+	  m.merchant_name,
+	  m.merchant_url,
+	  m.logo_url,
+	  m.summary,
+	  m.currency,
+	  m.merchant_estimated_cpc
 	ORDER BY m.merchant_name
 	LIMIT $3
 	OFFSET $4
@@ -62,7 +71,14 @@ export class MerchantsService {
     };
   }
 
-  async findOne(merchantId: string) {
+  async findOne(
+    merchantId: string,
+    page = 1,
+    limit = 20,
+  ) {
+
+    const offset = (page - 1) * limit;
+
     const merchantResult = await this.db.query(
       `
       SELECT
@@ -89,6 +105,16 @@ export class MerchantsService {
       };
     }
 
+   const offersCountResult = await this.db.query(
+     `
+     SELECT COUNT(*) AS total
+     FROM offers
+     WHERE merchant_id = $1
+       AND is_active = true
+     `,
+     [merchantId],
+   );
+
     const offersResult = await this.db.query(
       `
       SELECT
@@ -106,14 +132,26 @@ export class MerchantsService {
       WHERE merchant_id = $1
         AND is_active = true
       ORDER BY updated_at DESC
+	LIMIT $2
+	OFFSET $3
       `,
-      [merchantId],
+	[
+	  merchantId,
+	  limit,
+	  offset,
+	],
     );
 
-    return {
-      success: true,
-      merchant: merchantResult.rows[0],
-      offers: offersResult.rows,
-    };
+	return {
+	  success: true,
+	  merchant: merchantResult.rows[0],
+	  offers: offersResult.rows,
+	  page,
+	  limit,
+	  total: Number(
+	    offersCountResult.rows[0].total,
+	  ),
+};
+
   }
 }
